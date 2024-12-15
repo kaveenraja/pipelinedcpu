@@ -136,7 +136,7 @@ module proc (/*AUTOARG*/
 
 	wire			IF_ID_latchwr;
 	wire			nop;
-	wire			IF_ID_Flush;
+	wire			Flush;
 	
 	wire [2:0]		ID_EX_wraddr_in;
 	wire [2:0]		ID_EX_wraddr_out;
@@ -159,24 +159,25 @@ module proc (/*AUTOARG*/
 	wire [15:0] EX_MEM_instr_in;
 	wire [15:0] EX_MEM_instr_out;
 
+
    
   	/* MAIN */
 
 	fetch   fetch0(.pcIN(EX_MEM_PC_out), .pcwren(IF_pcwren), .pcselect(EX_MEM_PCSelect_Out), .clk(clk), .rst(rst), .pcOUT(IF_ID_pc_in), .instruction(IF_ID_instr_in));
 
 `
-	/* --------- IF -> ID LATCH ---------- */
+	/* --------- IF -> ID LATCH START ---------- */
 
-	register #(16) ifidpc   (.in(IF_ID_pc_in),    .out(IF_ID_pc_out),    .wr(IF_ID_latchwr), .rst(rst | IF_ID_Flush), .clk(clk));
-	register #(16) ifidinstr(.in(IF_ID_instr_in), .out(IF_ID_instr_out), .wr(IF_ID_latchwr), .rst(rst | IF_ID_Flush), .clk(clk));
+	register #(16) ifidpc   (.in(IF_ID_pc_in),    .out(IF_ID_pc_out),    .wr(IF_ID_latchwr), .rst(rst | Flush), .clk(clk));
+	register #(16) ifidinstr(.in(IF_ID_instr_in), .out(IF_ID_instr_out), .wr(IF_ID_latchwr), .rst(rst | Flush), .clk(clk));
 	
-	/* --------- IF -> ID LATCH ---------- */
+	/* --------- IF -> ID LATCH END   ---------- */
 
 	decode decode0(.RegDst_addr(ID_EX_wraddr_in), .Imm5(ID_EX_Imm5_in), .Imm8(ID_EX_Imm8_in), .Imm11(ID_EX_Imm11_in), .Reg1(ID_EX_Reg1_in), .Reg2(ID_EX_Reg2_in), .RegSrc(ID_EX_RegSrc_in), .to_ALUOP(ID_EX_ALUOP_in), .func(ID_EX_func_in), .Bsrc(ID_EX_BSrc_in), .brin(ID_EX_brin_in), .MemWrt(ID_EX_MemWrt_in), .ALUJmp(ID_EX_ALUJmp_in), .RegWrt_out(ID_EX_RegWrt_in), .RegDst_out(ID_EX_RegDst_in), .ImmSrc(ID_EX_ImmSrc_in), .err(dec_err), .Instruction(IF_ID_instr_out), .wbdata(wb_data), .RegWrt_in(MEM_WB_RegWrt_out), .RegDst_in(MEM_WB_RegDst_out), .RegDst_addr_in(MEM_WB_wraddr_out), .clk(clk), .rst(rst));
-	hazard h0(.PCWrite(IF_pcwren), .IF_ID_Write(IF_ID_latchwr), .nop(nop), .IF_ID_Flush(IF_ID_Flush), .ReadReg1(IF_ID_instr_out[10:8]), .ReadReg2(IF_ID_instr_out[7:5]), .EXWriteReg(ID_EX_wraddr_out), .MEMWriteReg(EX_MEM_wraddr_out), .WBWriteReg(MEM_WB_wraddr_out), .IDinstr(IF_ID_instr_out), .EXinstr(ID_EX_instr_out), .MEMinstr(EX_MEM_instr_out), .EXWren(ID_EX_RegWrt_out), .MemWren(EX_MEM_RegWrt_out), .WBWren(MEM_WB_RegWrt_out));
+	hazard h0(.PCWrite(IF_pcwren), .IF_ID_Write(IF_ID_latchwr), .nop(nop), .Flush(Flush), .ReadReg1(IF_ID_instr_out[10:8]), .ReadReg2(IF_ID_instr_out[7:5]), .EXWriteReg(ID_EX_wraddr_out), .MEMWriteReg(EX_MEM_wraddr_out), .WBWriteReg(MEM_WB_wraddr_out), .IDinstr(IF_ID_instr_out), .EXinstr(ID_EX_instr_out), .MEMinstr(EX_MEM_instr_out), .EXWren(ID_EX_RegWrt_out), .MemWren(EX_MEM_RegWrt_out), .WBWren(MEM_WB_RegWrt_out), .branchtaken(EX_MEM_PCSelect_Out));
 
 
-	/* --------- ID -> EX LATCH ---------- */
+	/* --------- ID -> EX LATCH START ---------- */
 	assign ID_EX_PC_in = IF_ID_pc_out;
 
 		// Control Latches: RegSrc [1:0], to_ALUOP [4:0], func [1:0], BSrc [1:0], brin [4:0], MemWrt, ALUJmp, ImmSrc, RegWrt, RegDst
@@ -186,7 +187,7 @@ module proc (/*AUTOARG*/
 
 	assign ID_EX_CNTRLSIG_IN_pre  = {ID_EX_RegSrc_in,ID_EX_ALUOP_in,ID_EX_func_in,ID_EX_BSrc_in,ID_EX_brin_in,ID_EX_MemWrt_in,ID_EX_ALUJmp_in,ID_EX_ImmSrc_in,ID_EX_RegWrt_in,ID_EX_RegDst_in};
     mux2_1 mux0[21:0](.a(ID_EX_CNTRLSIG_IN_pre), .b(22'b0), .s({22{nop}}), .out(ID_EX_CNTRLSIG_IN));
-	register #(22) idexcntrl(.in(ID_EX_CNTRLSIG_IN), .out(ID_EX_CNTRLSIG_OUT), .wr(1'b1), .rst(rst), .clk(clk));
+	register #(22) idexcntrl(.in(ID_EX_CNTRLSIG_IN), .out(ID_EX_CNTRLSIG_OUT), .wr(1'b1), .rst(rst|Flush), .clk(clk));
 
 	assign ID_EX_RegSrc_out   = ID_EX_CNTRLSIG_OUT[21:20];
 	assign ID_EX_ALUOP_out    = ID_EX_CNTRLSIG_OUT[19:15];
@@ -215,9 +216,9 @@ module proc (/*AUTOARG*/
 
 	mux2_1 idexinstrmux[15:0](.a(ID_EX_instr_in_pre), .b(16'h0800), .s({16{nop}}), .out(ID_EX_instr_in));
 
-	register #(16) idexinstr (.in(ID_EX_instr_in), .out(ID_EX_instr_out), .wr(1'b1), .rst(rst), .clk(clk));
+	register #(16) idexinstr (.in(ID_EX_instr_in), .out(ID_EX_instr_out), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 	
-	/* --------- ID -> EX LATCH ---------- */
+	/* --------- ID -> EX LATCH END   ---------- */
 
 	wire [1:0] 	ForwardA;
 	wire [1:0] 	ForwardB;
@@ -249,7 +250,7 @@ module proc (/*AUTOARG*/
 	execute execu0(.Out0(EX_MEM_Out0_in), .Out3(EX_MEM_Out3_in), .ALUOut(EX_MEM_ALUOut_in), .PCwb(EX_MEM_PC_in), .pcselect(EX_MEM_PCSelect_In), .instr(ID_EX_instr_out), .PC(ID_EX_PC_out), .to_ALUOP(ID_EX_ALUOP_out), .func(ID_EX_func_out), .Reg1(ForwardAOut), .Reg2(ForwardBOut), .Imm5(ID_EX_Imm5_out), .Imm8(ID_EX_Imm8_out), .Imm11(ID_EX_Imm11_out), .BSrc(ID_EX_BSrc_out), .brin(ID_EX_brin_out), .ALUJmp(ID_EX_ALUJmp_out), .ImmSrc(ID_EX_ImmSrc_out));
 
 
-	/* --------- EX -> MEM LATCH ---------- */
+	/* --------- EX -> MEM LATCH START ---------- */
 
 	assign EX_MEM_wrdata_in = ForwardBOut;
 	assign EX_MEM_RegDst_in = ID_EX_RegDst_out;
@@ -263,7 +264,7 @@ module proc (/*AUTOARG*/
 	wire [5:0] EX_MEM_CNTRLSIG_OUT;
 
 	assign EX_MEM_CNTRLSIG_IN = {EX_MEM_RegDst_in, EX_MEM_RegSrc_in, EX_MEM_RegWrt_in, EX_MEM_MemWrt_in};
-	register #(6) exmemcntrl(.in(EX_MEM_CNTRLSIG_IN), .out(EX_MEM_CNTRLSIG_OUT), .wr(1'b1), .rst(rst), .clk(clk));
+	register #(6) exmemcntrl(.in(EX_MEM_CNTRLSIG_IN), .out(EX_MEM_CNTRLSIG_OUT), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 
 	assign EX_MEM_RegDst_out = EX_MEM_CNTRLSIG_OUT[5:4];
 	assign EX_MEM_RegSrc_out = EX_MEM_CNTRLSIG_OUT[3:2];
@@ -284,16 +285,16 @@ module proc (/*AUTOARG*/
 
 	// Pcwrite register
 	
-	register #(1) exmempcwrite(.in(EX_MEM_PCSelect_In), .out(EX_MEM_PCSelect_Out), .wr(1'b1), .rst(rst), .clk(clk));
+	register #(1) exmempcwrite(.in(EX_MEM_PCSelect_In), .out(EX_MEM_PCSelect_Out), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 
 	// Instr register
 
 
 	assign EX_MEM_instr_in = ID_EX_instr_out;
-	register #(16) exmeminstr (.in(EX_MEM_instr_in), .out(EX_MEM_instr_out), .wr(1'b1), .rst(rst), .clk(clk));
+	register #(16) exmeminstr (.in(EX_MEM_instr_in), .out(EX_MEM_instr_out), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 
 
-	/* --------- EX -> MEM LATCH ---------- */
+	/* --------- EX -> MEM LATCH END ---------- */
 
 
 	memory memory0(.Out1(MEM_WB_Out1_in), .Out2(MEM_WB_Out2_in), .ALUout(EX_MEM_ALUOut_out), .wrdata(EX_MEM_wrdata_out), .MemWrt(EX_MEM_MemWrt_out), .clk(clk), .rst(rst));
