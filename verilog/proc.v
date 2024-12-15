@@ -219,13 +219,39 @@ module proc (/*AUTOARG*/
 	
 	/* --------- ID -> EX LATCH ---------- */
 
+	wire [1:0] 	ForwardA;
+	wire [1:0] 	ForwardB;
+	wire [3:0] 	forwardAs;
+	wire [3:0] 	forwardBs;
+	wire [15:0] ForwardAOut;
+	wire [15:0] ForwardBOut;
 
-	execute execu0(.Out0(EX_MEM_Out0_in), .Out3(EX_MEM_Out3_in), .ALUOut(EX_MEM_ALUOut_in), .PCwb(EX_MEM_PC_in), .pcselect(EX_MEM_PCSelect_In), .instr(ID_EX_instr_out), .PC(ID_EX_PC_out), .to_ALUOP(ID_EX_ALUOP_out), .func(ID_EX_func_out), .Reg1(ID_EX_Reg1_out), .Reg2(ID_EX_Reg2_out), .Imm5(ID_EX_Imm5_out), .Imm8(ID_EX_Imm8_out), .Imm11(ID_EX_Imm11_out), .BSrc(ID_EX_BSrc_out), .brin(ID_EX_brin_out), .ALUJmp(ID_EX_ALUJmp_out), .ImmSrc(ID_EX_ImmSrc_out));
+	wire [15:0] InCData;
+
+	forwarding forward(.ForwardA(ForwardA), .ForwardB(ForwardB), .RegA(ID_EX_instr_out[10:8]), .RegB(ID_EX_instr_out[7:5]), .EX_MEM_Reg(EX_MEM_wraddr_out), .MEM_WB_Reg(MEM_WB_wraddr_out), .EX_MEM_RegWr(EX_MEM_RegWrt_out), .MEM_WB_RegWr(MEM_WB_RegWrt_out));
+	
+	assign forwardAs[0] = ~ForwardA[1] & ~ForwardA[0];
+	assign forwardAs[1] = ~ForwardA[1] &  ForwardA[0];
+	assign forwardAs[2] =  ForwardA[1] & ~ForwardA[0];
+	assign forwardAs[3] =  0;
+
+	assign forwardBs[0] = ~ForwardB[1] & ~ForwardB[0];
+	assign forwardBs[1] = ~ForwardB[1] &  ForwardB[0];
+	assign forwardBs[2] =  ForwardB[1] & ~ForwardB[0];
+	assign forwardBs[3] =  0;
+
+	assign InCData = (EX_MEM_RegSrc_out == 2'b11) ? EX_MEM_Out3_out : EX_MEM_ALUOut_out;
+
+
+	mux4_1 #(16) forA(.inA(ID_EX_Reg1_out), .inB(wb_data), .inC(InCData), .inD(16'b0), .s(forwardAs), .out(ForwardAOut));
+	mux4_1 #(16) forB(.inA(ID_EX_Reg2_out), .inB(wb_data), .inC(InCData), .inD(16'b0), .s(forwardBs), .out(ForwardBOut));
+
+	execute execu0(.Out0(EX_MEM_Out0_in), .Out3(EX_MEM_Out3_in), .ALUOut(EX_MEM_ALUOut_in), .PCwb(EX_MEM_PC_in), .pcselect(EX_MEM_PCSelect_In), .instr(ID_EX_instr_out), .PC(ID_EX_PC_out), .to_ALUOP(ID_EX_ALUOP_out), .func(ID_EX_func_out), .Reg1(ForwardAOut), .Reg2(ForwardBOut), .Imm5(ID_EX_Imm5_out), .Imm8(ID_EX_Imm8_out), .Imm11(ID_EX_Imm11_out), .BSrc(ID_EX_BSrc_out), .brin(ID_EX_brin_out), .ALUJmp(ID_EX_ALUJmp_out), .ImmSrc(ID_EX_ImmSrc_out));
 
 
 	/* --------- EX -> MEM LATCH ---------- */
 
-	assign EX_MEM_wrdata_in = ID_EX_Reg2_out;
+	assign EX_MEM_wrdata_in = ForwardBOut;
 	assign EX_MEM_RegDst_in = ID_EX_RegDst_out;
 	assign EX_MEM_RegSrc_in = ID_EX_RegSrc_out;
 	assign EX_MEM_RegWrt_in = ID_EX_RegWrt_out;

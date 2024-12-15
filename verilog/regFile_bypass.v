@@ -51,7 +51,7 @@ module regFile_bypass (
 	assign reg_write_select = reg_write_select_raw & {8{writeEn}};
 
 	
-	register #(WIDTH) reg0[7:0](.in({8{writeData}}), .out( {reg_out_7, reg_out_6, reg_out_5, reg_out_4, reg_out_3, reg_out_2, reg_out_1, reg_out_0} ), .wr(reg_write_select), .rst({8{rst}}), .clk({8{clk}}));
+	register_bypass #(WIDTH) reg0[7:0](.in({8{writeData}}), .out( {reg_out_7, reg_out_6, reg_out_5, reg_out_4, reg_out_3, reg_out_2, reg_out_1, reg_out_0} ), .wr(reg_write_select), .rst({8{rst}}), .clk({8{clk}}));
 	
 	mux8_1 #(WIDTH) mux0(.inA(reg_out_0), .inB(reg_out_1), .inC(reg_out_2), .inD(reg_out_3), .inE(reg_out_4), .inF(reg_out_5), .inG(reg_out_6), .inH(reg_out_7), .s(reg_read1_select), .out(read1Data));
 	mux8_1 #(WIDTH) mux1(.inA(reg_out_0), .inB(reg_out_1), .inC(reg_out_2), .inD(reg_out_3), .inE(reg_out_4), .inF(reg_out_5), .inG(reg_out_6), .inH(reg_out_7), .s(reg_read2_select), .out(read2Data));
