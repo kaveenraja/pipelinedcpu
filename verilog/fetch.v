@@ -6,7 +6,7 @@
 */
 
 module fetch (// Outputs
-   pcOUT, instruction,
+   pcOUT, instruction, err,
    // Inputs
    pcIN, pcwren, pcselect, clk, rst);
 
@@ -19,10 +19,12 @@ module fetch (// Outputs
 
 	output [15:0] pcOUT;
 	output [15:0] instruction;
+	output 		  err;
 
 	// WIRES
 	wire [15:0]   pc_reg_in;
 	wire [15:0]   pc_reg_out;
+	wire [15:0]	  instr_intr;
 	wire		  adder_cout;
 	wire 		  halt;
 	
@@ -36,9 +38,9 @@ module fetch (// Outputs
 
 	fulladder16 FA1 (.A(pc_reg_out), .B(16'h0002), .S(pcOUT), .Cout(adder_cout));
 
-	memory2c memcell(.data_out(instruction), .data_in(), .addr(pc_reg_out), .enable(1'b1), .wr(1'b0), .createdump(1'b1), .clk(clk), .rst(rst));
+	memory2c_align memcell(.data_out(instr_intr), .data_in(), .addr(pc_reg_out), .enable(1'b1), .wr(1'b0), .createdump(1'b0), .clk(clk), .rst(rst), .err(err));
 
-	
+	assign instruction = instr_intr & ~({16{err}});
 
 
    

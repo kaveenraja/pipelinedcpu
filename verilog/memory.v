@@ -7,25 +7,27 @@
 */
 
 module memory (// Outputs
-   	Out1, Out2,
+   	Out1, Out2, err,
    	// Inputs
-   	ALUout, wrdata, MemWrt, clk, rst);
+   	ALUout, wrdata, MemRd, MemWrt, clk, rst);
 
    	// IN/OUT
 	input  [15:0] ALUout;
 	input  [15:0] wrdata;
+	input		  MemRd;
 	input 		  MemWrt;
 	input		  clk;
 	input		  rst;
 
 	output [15:0] Out1;
 	output [15:0] Out2;
+	output 		  err;
 
 	// WIRE
 
 	// MAIN
 
-	memory2c memcell(.data_out(Out1), .data_in(wrdata), .addr(ALUout), .enable(1'b1), .wr(MemWrt), .createdump(1'b1), .clk(clk), .rst(rst));
+	memory2c_align memcell(.data_out(Out1), .data_in(wrdata), .addr(ALUout), .enable(MemRd | MemWrt), .wr(MemWrt), .createdump(1'b0), .clk(clk), .rst(rst), .err(err));
 	assign Out2 = ALUout;
 
 

@@ -170,7 +170,7 @@ module proc_hier_pbench();
    // Signal indicating a valid data cache hit
    // Above assignment is a dummy example
    
-   assign Halt = (DUT.p0.fetch0.instruction[15:11] === 5'b00000) & (DUT.p0.IF_ID_instr_out[15:11] === 5'b00000) & (DUT.p0.ID_EX_instr_out[15:11] === 5'b00000) & (DUT.p0.EX_MEM_instr_out[15:11] === 5'b00000) & (DUT.p0.MEM_WB_instr_out[15:11] === 5'b00000);
+   assign Halt = ((DUT.p0.fetch0.instruction[15:11] === 5'b00000) & (DUT.p0.IF_ID_instr_out[15:11] === 5'b00000) & (DUT.p0.ID_EX_instr_out[15:11] === 5'b00000) & (DUT.p0.EX_MEM_instr_out[15:11] === 5'b00000) & (DUT.p0.MEM_WB_instr_out[15:11] === 5'b00000)) | DUT.p0.MEM_WB_instrerr_out | DUT.p0.MEM_WB_dataerr_out;
    // Processor halted
    
    

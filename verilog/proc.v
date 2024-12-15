@@ -159,18 +159,33 @@ module proc (/*AUTOARG*/
 	wire [15:0] EX_MEM_instr_in;
 	wire [15:0] EX_MEM_instr_out;
 
+	wire IF_ID_instrerr_in;
+	wire IF_ID_instrerr_out;
+
+	wire ID_EX_instrerr_in;
+	wire ID_EX_instrerr_out;
+
+	wire EX_MEM_instrerr_in;
+	wire EX_MEM_instrerr_out;
+
+	wire MEM_WB_instrerr_in;
+	wire MEM_WB_instrerr_out;
+
+	wire MEM_WB_dataerr_in;
+	wire MEM_WB_dataerr_out;
 
    
   	/* MAIN */
 
-	fetch   fetch0(.pcIN(EX_MEM_PC_out), .pcwren(IF_pcwren), .pcselect(EX_MEM_PCSelect_Out), .clk(clk), .rst(rst), .pcOUT(IF_ID_pc_in), .instruction(IF_ID_instr_in));
+	fetch   fetch0(.pcIN(EX_MEM_PC_out), .pcwren(IF_pcwren), .pcselect(EX_MEM_PCSelect_Out), .clk(clk), .rst(rst), .pcOUT(IF_ID_pc_in), .instruction(IF_ID_instr_in), .err(IF_ID_instrerr_in));
 
 `
 	/* --------- IF -> ID LATCH START ---------- */
 
 	register #(16) ifidpc   (.in(IF_ID_pc_in),    .out(IF_ID_pc_out),    .wr(IF_ID_latchwr), .rst(rst | Flush), .clk(clk));
 	register #(16) ifidinstr(.in(IF_ID_instr_in), .out(IF_ID_instr_out), .wr(IF_ID_latchwr), .rst(rst | Flush), .clk(clk));
-	
+	register IF_ID_instrerror(.in(IF_ID_instrerr_in), .out(IF_ID_instrerr_out), .wr(1'b1), .rst(rst), .clk(clk));
+
 	/* --------- IF -> ID LATCH END   ---------- */
 
 	decode decode0(.RegDst_addr(ID_EX_wraddr_in), .Imm5(ID_EX_Imm5_in), .Imm8(ID_EX_Imm8_in), .Imm11(ID_EX_Imm11_in), .Reg1(ID_EX_Reg1_in), .Reg2(ID_EX_Reg2_in), .RegSrc(ID_EX_RegSrc_in), .to_ALUOP(ID_EX_ALUOP_in), .func(ID_EX_func_in), .Bsrc(ID_EX_BSrc_in), .brin(ID_EX_brin_in), .MemWrt(ID_EX_MemWrt_in), .ALUJmp(ID_EX_ALUJmp_in), .RegWrt_out(ID_EX_RegWrt_in), .RegDst_out(ID_EX_RegDst_in), .ImmSrc(ID_EX_ImmSrc_in), .err(dec_err), .Instruction(IF_ID_instr_out), .wbdata(wb_data), .RegWrt_in(MEM_WB_RegWrt_out), .RegDst_in(MEM_WB_RegDst_out), .RegDst_addr_in(MEM_WB_wraddr_out), .clk(clk), .rst(rst));
@@ -218,6 +233,8 @@ module proc (/*AUTOARG*/
 
 	register #(16) idexinstr (.in(ID_EX_instr_in), .out(ID_EX_instr_out), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 	
+	assign ID_EX_instrerr_in = IF_ID_instrerr_out;
+	register ID_EX_instrerror(.in(ID_EX_instrerr_in), .out(ID_EX_instrerr_out), .wr(1'b1), .rst(rst), .clk(clk));
 	/* --------- ID -> EX LATCH END   ---------- */
 
 	wire [1:0] 	ForwardA;
@@ -293,14 +310,15 @@ module proc (/*AUTOARG*/
 	assign EX_MEM_instr_in = ID_EX_instr_out;
 	register #(16) exmeminstr (.in(EX_MEM_instr_in), .out(EX_MEM_instr_out), .wr(1'b1), .rst(rst | Flush), .clk(clk));
 
-
+	assign EX_MEM_instrerr_in = ID_EX_instrerr_out;
+	register EX_MEM_instrerror(.in(EX_MEM_instrerr_in), .out(EX_MEM_instrerr_out), .wr(1'b1), .rst(rst), .clk(clk));
 	/* --------- EX -> MEM LATCH END ---------- */
 
 
-	memory memory0(.Out1(MEM_WB_Out1_in), .Out2(MEM_WB_Out2_in), .ALUout(EX_MEM_ALUOut_out), .wrdata(EX_MEM_wrdata_out), .MemWrt(EX_MEM_MemWrt_out), .clk(clk), .rst(rst));
+	memory memory0(.Out1(MEM_WB_Out1_in), .Out2(MEM_WB_Out2_in), .ALUout(EX_MEM_ALUOut_out), .wrdata(EX_MEM_wrdata_out), .MemRd(EX_MEM_instr_out[15:11] == 5'b10001), .MemWrt(EX_MEM_MemWrt_out), .clk(clk), .rst(rst), .err(MEM_WB_dataerr_in));
 
 
-	/* --------- MEM -> WB LATCH ---------- */
+	/* --------- MEM -> WB LATCH START ---------- */
 
 	assign MEM_WB_Out0_in = EX_MEM_Out0_out;
 	assign MEM_WB_Out3_in = EX_MEM_Out3_out;
@@ -339,8 +357,10 @@ module proc (/*AUTOARG*/
 	assign MEM_WB_instr_in = EX_MEM_instr_out;
 	register #(16) memWBinstr (.in(MEM_WB_instr_in), .out(MEM_WB_instr_out), .wr(1'b1), .rst(rst), .clk(clk));
 
-
-	/* --------- MEM -> WB LATCH ---------- */
+	assign MEM_WB_instrerr_in = EX_MEM_instrerr_out;
+	register MEM_WB_instrerror(.in(MEM_WB_instrerr_in), .out(MEM_WB_instrerr_out), .wr(1'b1), .rst(rst), .clk(clk));
+	register MEM_WB_dataerror (.in(MEM_WB_dataerr_in),  .out(MEM_WB_dataerr_out),  .wr(1'b1), .rst(rst), .clk(clk));
+	/* --------- MEM -> WB LATCH END   ---------- */
 
 
 	wb wb0(.wbdata(wb_data), .In0(MEM_WB_Out0_out), .In1(MEM_WB_Out1_out), .In2(MEM_WB_Out2_out), .In3(MEM_WB_Out3_out), .RegSrc(MEM_WB_RegSrc_out));
