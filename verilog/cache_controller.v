@@ -55,35 +55,36 @@ module cache_controller(
 	assign force_enable_int[1] = (cache_en[0] & cache_en[1] &  cache_en[2] & ~dirty) | (cache_en[0] & ~cache_en[1] & ~dirty) | (~cache_en[3] & cache_en[4]);
 
 
-	localparam	Ready 			= 20'b00000000000000000000,
-				rd_cache		= 20'b00000000000000000001,
-				rd_evict 		= 20'b00000000000000000010,
-				rd_evict_wait 	= 20'b00000000000000000100,
-				ld_mem 			= 20'b00000000000000001000,
-				wait_ld 		= 20'b00000000000000010000,
-				return_data 	= 20'b00000000000000100000,
-				wr_cache 		= 20'b00000000000001000000,
-				wr_evict 		= 20'b00000000000010000000,
-				wr_evict_wait 	= 20'b00000000000100000000,
-				st_mem 			= 20'b00000000001000000000,
-				wait_st 		= 20'b00000000010000000000,
+	localparam	Ready 			= 21'b000000000000000000000,
+				rd_cache		= 21'b000000000000000000001,
+				rd_evict 		= 21'b000000000000000000010,
+				rd_evict_wait 	= 21'b000000000000000000100,
+				ld_mem 			= 21'b000000000000000001000,
+				wait_ld 		= 21'b000000000000000010000,
+				return_data 	= 21'b000000000000000100000,
+				wr_cache 		= 21'b000000000000001000000,
+				wr_evict 		= 21'b000000000000010000000,
+				wr_evict_wait 	= 21'b000000000000100000000,
+				st_mem 			= 21'b000000000001000000000,
+				wait_st 		= 21'b000000000010000000000,
 
-				wr_evict_wait1 	= 20'b00000000100000000000, //11
-				wr_evict_wait2 	= 20'b00000001000000000000, //12
+				wr_evict_wait1 	= 21'b000000000100000000000, //11
+				wr_evict_wait2 	= 21'b000000001000000000000, //12
 
-				rd_evict_wait1 	= 20'b00000010000000000000, //13
-				rd_evict_wait2 	= 20'b00000100000000000000, //14
+				rd_evict_wait1 	= 21'b000000010000000000000, //13
+				rd_evict_wait2 	= 21'b000000100000000000000, //14
 
-				wait_ld1 		= 20'b00001000000000000000, //15
-				wait_ld2 		= 20'b00010000000000000000, //16
-				wait_ld3		= 20'b00100000000000000000, //17
-				wait_ld4		= 20'b01000000000000000000, //18
-				wait_extra		= 20'b10000000000000000000; //19
+				wait_ld1 		= 21'b000001000000000000000, //15
+				wait_ld2 		= 21'b000010000000000000000, //16
+				wait_ld3		= 21'b000100000000000000000, //17
+				wait_ld4		= 21'b001000000000000000000, //18
+				wait_ld5		= 21'b100000000000000000000, //20
+				wait_extra		= 21'b010000000000000000000; //19
 
-	wire [19:0]	state;
-	wire [19:0] next_state;
+	wire [20:0]	state;
+	wire [20:0] next_state;
 
-	dff state_reg[19:0](.d(next_state), .q(state), .clk(clk), .rst(rst));
+	dff state_reg[20:0](.d(next_state), .q(state), .clk(clk), .rst(rst));
 
 
 	// Read States
@@ -114,7 +115,8 @@ module cache_controller(
 	assign next_state[15] = state[4];
 	assign next_state[16] = state[15];
 	assign next_state[17] = state[16];
-	assign next_state[18] = state[17] | (state[18] & |mem_busy);
+	assign next_state[18] = state[17];
+	assign next_state[20] = state[18];
 
 
 
@@ -439,10 +441,10 @@ module cache_controller(
 			wait_ld1:
 				begin
 				DataOut			  = mem_data_out; //
-				Done			  = (Addr[2:0] == 3'b000) & |mem_data_out & ~load_after_write; //
+				Done			  = (Addr[2:0] == 3'b000) & ~load_after_write; //
 				Stall			  = 1'b1; //
 				cache_rd		  = 1'b0;
-				cache_wr		  = 1'b1 & |mem_data_out; //
+				cache_wr		  = 1'b1; //
 				cache_comp		  = 1'b0;
 				cache_addr		  = {Addr[15:3], 3'b000}; 
 				cache_data_in	  = mem_data_out; //
@@ -458,10 +460,10 @@ module cache_controller(
 			wait_ld2:
 				begin
 				DataOut			  = mem_data_out; //
-				Done			  = (Addr[2:0] == 3'b010) & |mem_data_out & ~load_after_write; //
+				Done			  = (Addr[2:0] == 3'b010) & ~load_after_write; //
 				Stall			  = 1'b1; //
 				cache_rd		  = 1'b0;
-				cache_wr		  = 1'b1 & |mem_data_out; //
+				cache_wr		  = 1'b1; //
 				cache_comp		  = 1'b0;
 				cache_addr		  = {Addr[15:3], 3'b010}; 
 				cache_data_in	  = mem_data_out; //
@@ -477,10 +479,10 @@ module cache_controller(
 			wait_ld3:
 				begin
 				DataOut			  = mem_data_out; //
-				Done			  = (Addr[2:0] == 3'b100) & |mem_data_out & ~load_after_write; //
+				Done			  = (Addr[2:0] == 3'b100) & ~load_after_write; //
 				Stall			  = 1'b1; //
 				cache_rd		  = 1'b0;
-				cache_wr		  = 1'b1 & |mem_data_out; //
+				cache_wr		  = 1'b1; //
 				cache_comp		  = 1'b0;
 				cache_addr		  = {Addr[15:3], 3'b100}; 
 				cache_data_in	  = mem_data_out; //
@@ -496,14 +498,33 @@ module cache_controller(
 			wait_ld4:
 				begin
 				DataOut			  = mem_data_out; //
-				Done			  = (Addr[2:0] == 3'b110) & |mem_data_out & ~load_after_write; //
-				Stall			  = |mem_busy; //
+				Done			  = (Addr[2:0] == 3'b110) & ~load_after_write; //
+				Stall			  = 1'b1; //
 				cache_rd		  = 1'b0;
-				cache_wr		  = 1'b1  & |mem_data_out; //
+				cache_wr		  = 1'b1; //
 				cache_comp		  = 1'b0;
 				cache_addr		  = {Addr[15:3], 3'b110}; 
 				cache_data_in	  = mem_data_out; //
 				force_enable	  = force_enable_hold; //
+				mem_addr		  = 16'b0;
+				mem_data_in		  = 16'b0;
+				mem_write		  = 1'b0;
+				mem_read		  = 1'b0; 
+				controller_err    = 1'b0;
+				toggle_victim_way = 1'b0;
+				end
+
+			wait_ld5:
+				begin
+				DataOut			  = 16'b0;
+				Done			  = 1'b0; //
+				Stall			  = 1'b0; //
+				cache_rd		  = 1'b0;
+				cache_wr		  = 1'b0; //
+				cache_comp		  = 1'b0;
+				cache_addr		  = 16'b0; 
+				cache_data_in	  = 16'b0; //
+				force_enable	  = 2'b0; 
 				mem_addr		  = 16'b0;
 				mem_data_in		  = 16'b0;
 				mem_write		  = 1'b0;
