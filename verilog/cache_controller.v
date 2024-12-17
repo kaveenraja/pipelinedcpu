@@ -129,7 +129,7 @@ module cache_controller(
 				begin
 				DataOut			  = 16'b0;
 				Done			  = 1'b0;
-				Stall			  = 1'b0;
+				Stall			  = Rd | Wr;
 				cache_rd		  = 1'b0;
 				cache_wr		  = 1'b0;
 				cache_comp		  = 1'b0;

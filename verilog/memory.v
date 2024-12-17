@@ -27,16 +27,16 @@ module memory (// Outputs
 
 	// WIRE
 	wire [15:0] Out1Int;
-
+	wire		StallInt;
 	wire		CacheHit;
 
 
 	//MAIN
 
-	stallmem datamem(.DataOut(Out1Int), .Done(Done), .Stall(Stall), .CacheHit(CacheHit), .err(err), .Addr(ALUout), .DataIn(wrdata), .Rd(MemRd), .Wr(MemWrt), .createdump(1'b0), .clk(clk), .rst(rst));
+	mem_system datamem(.DataOut(Out1Int), .Done(Done), .Stall(StallInt), .CacheHit(CacheHit), .err(err), .Addr(ALUout), .DataIn(wrdata), .Rd(MemRd), .Wr(MemWrt), .createdump(1'b0), .clk(clk), .rst(rst));
 	register_bypass #(16) datamemout(.in(Out1Int), .out(Out1), .wr(Done), .clk(clk), .rst(rst));
 
-
+	assign Stall = StallInt & ~Done;
 	assign Out2 = ALUout;
 
 
