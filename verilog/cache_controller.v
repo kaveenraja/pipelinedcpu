@@ -246,7 +246,7 @@ module cache_controller(
 				begin
 				DataOut			  = cache_data_out; //
 				Done			  = 1'b1; //
-				Stall			  = 1'b1; //
+				Stall			  = 1'b0; //
 				cache_rd		  = 1'b1; //
 				cache_wr		  = 1'b0; //
 				cache_comp		  = 1'b1; //
@@ -265,7 +265,7 @@ module cache_controller(
 				begin
 				DataOut			  = 16'b0;
 				Done			  = real_hit; //
-				Stall			  = 1'b1; //
+				Stall			  = ~real_hit; //
 				cache_rd		  = 1'b0;
 				cache_wr		  = 1'b1; //
 				cache_comp		  = 1'b1; //
@@ -497,7 +497,7 @@ module cache_controller(
 				begin
 				DataOut			  = mem_data_out; //
 				Done			  = (Addr[2:0] == 3'b110) & |mem_data_out & ~load_after_write; //
-				Stall			  = 1'b1; //
+				Stall			  = |mem_busy; //
 				cache_rd		  = 1'b0;
 				cache_wr		  = 1'b1  & |mem_data_out; //
 				cache_comp		  = 1'b0;
