@@ -7,7 +7,7 @@
 */
 
 module memory (// Outputs
-   	Out1, Out2, err,
+   	Out1, Out2, Stall, Done, err,
    	// Inputs
    	ALUout, wrdata, MemRd, MemWrt, clk, rst);
 
@@ -21,13 +21,22 @@ module memory (// Outputs
 
 	output [15:0] Out1;
 	output [15:0] Out2;
+	output 		  Stall;
+	output 		  Done;
 	output 		  err;
 
 	// WIRE
+	wire [15:0] Out1Int;
 
-	// MAIN
+	wire		CacheHit;
 
-	memory2c_align memcell(.data_out(Out1), .data_in(wrdata), .addr(ALUout), .enable(MemRd | MemWrt), .wr(MemWrt), .createdump(1'b0), .clk(clk), .rst(rst), .err(err));
+
+	//MAIN
+
+	stallmem datamem(.DataOut(Out1Int), .Done(Done), .Stall(Stall), .CacheHit(CacheHit), .err(err), .Addr(ALUout), .DataIn(wrdata), .Rd(MemRd), .Wr(MemWrt), .createdump(1'b0), .clk(clk), .rst(rst));
+	register_bypass #(16) datamemout(.in(Out1Int), .out(Out1), .wr(Done), .clk(clk), .rst(rst));
+
+
 	assign Out2 = ALUout;
 
 
